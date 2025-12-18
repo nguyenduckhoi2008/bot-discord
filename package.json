@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A collection of event handlers for a Discord bot using discord.js",
   "main": "src/index.js",
-  "srcipt": {
+  "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },

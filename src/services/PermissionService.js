@@ -1,5 +1,5 @@
 const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const config = require('../../config');
+const config = require('../config/config');
 
 class PermissionService {
   static REQUIRED_PERMISSIONS = [
