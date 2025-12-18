@@ -11,13 +11,14 @@
   "author": "Nguyen Khoi",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.11.0",
+    "discord.js": "^14.25.1",
     "pg": "8.16.3",
-    "dotenv": "^16.3.1",
-    "node-cron": "^3.0.3",
-    "groq-sdk": "^0.3.2",
-    "axios": "^1.4.0",
-    "cheerio": "^1.0.0-rc.12"
+    "dotenv": "^17.2.3",
+    "node-cron": "^4.2.1",
+    "groq-sdk": "^0.37.0",
+    "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
+    "punycode": "^2.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
