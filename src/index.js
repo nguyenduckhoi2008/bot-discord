@@ -109,7 +109,7 @@ async function analyzeAndCreateEvent(guildId) {
 }
 
 // ============= EVENT HANDLERS =============
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   console.log(`✅ Bot online: ${client.user.tag}`);
   console.log(`📊 Serving ${client.guilds.cache.size} servers`);
   
