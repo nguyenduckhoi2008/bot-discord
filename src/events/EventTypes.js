@@ -1,36 +1,41 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const AIService = require('../services/AIService');
+const ImageSearchService = require('../services/ImageSearchService');
+const MusicService = require('../services/MusicService');
 
 class EventTypes {
   static events = [
     {
-      type: 'trivia',
-      name: '🧠 Ai Nhanh Tay Hơn?',
-      weight: 30,
+      type: 'ai_trivia',
+      name: '🤖 AI Trivia Quiz',
+      weight: 25,
       async execute(channel, onlineMembers) {
-        const questions = [
-          { q: 'Thủ đô Việt Nam là gì?', a: ['hanoi', 'hà nội', 'ha noi', 'hn'] },
-          { q: 'Ai là tác giả "Truyện Kiều"?', a: ['nguyễn du', 'nguyen du'] },
-          { q: '1 + 1 = ?', a: ['2', 'hai'] },
-          { q: 'Con vật nào là biểu tượng Việt Nam?', a: ['rồng', 'long', 'dragon'] },
-          { q: 'Việt Nam có bao nhiêu tỉnh thành?', a: ['63'] }
-        ];
-        
-        const q = questions[Math.floor(Math.random() * questions.length)];
         const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
         
         const embed = new EmbedBuilder()
-          .setTitle('🧠 AI NHANH TAY HƠN?')
-          .setDescription(`${mentions}\n\n**Câu hỏi:** ${q.q}\n\n⏰ Trả lời trong 30 giây!`)
-          .setColor('#FFD700')
-          .setFooter({ text: 'Người đầu tiên trả lời đúng thắng! 🏆' })
-          .setTimestamp();
+          .setTitle('🤖 AI ĐANG TẠO CÂU HỎI...')
+          .setDescription(`${mentions}\n\n⏳ Chờ chút nhé...`)
+          .setColor('#FFD700');
         
-        await channel.send({ embeds: [embed] });
+        const msg = await channel.send({ embeds: [embed] });
+        
+        // AI tạo câu hỏi
+        const question = await AIService.generateTriviaQuestion('Việt Nam');
+        
+        const questionEmbed = new EmbedBuilder()
+          .setTitle('🤖 AI TRIVIA QUIZ!')
+          .setDescription(`${mentions}\n\n**Câu hỏi:** ${question.question}\n\n⏰ Trả lời trong 30 giây!`)
+          .setColor('#00FF00')
+          .setFooter({ text: 'Được tạo bởi AI ✨' });
+        
+        await msg.edit({ embeds: [questionEmbed] });
         
         const filter = m => 
           !m.author.bot && 
           onlineMembers.includes(m.author.id) &&
-          q.a.some(ans => m.content.toLowerCase().trim() === ans);
+          question.answers.some(ans => 
+            m.content.toLowerCase().includes(ans.toLowerCase())
+          );
         
         try {
           const collected = await channel.awaitMessages({ 
@@ -43,8 +48,8 @@ class EventTypes {
           const winner = collected.first();
           await channel.send({
             embeds: [new EmbedBuilder()
-              .setTitle('🎉 CÓ NGƯỜI THẮNG RỒI!')
-              .setDescription(`**${winner.author}** trả lời đúng: **${q.a[0]}**`)
+              .setTitle('🎉 ĐÚNG RỒI!')
+              .setDescription(`**${winner.author}** trả lời đúng!\n\n💡 Đáp án: **${question.correctAnswer}**`)
               .setColor('#00FF00')]
           });
           return [winner.author.id];
@@ -52,17 +57,205 @@ class EventTypes {
           await channel.send({
             embeds: [new EmbedBuilder()
               .setTitle('⏰ HẾT GIỜ!')
-              .setDescription(`Không ai trả lời đúng. Đáp án là: **${q.a[0]}**`)
+              .setDescription(`Đáp án đúng là: **${question.correctAnswer}**`)
               .setColor('#FF0000')]
           });
           return [];
         }
       }
     },
+
+    {
+      type: 'image_guess',
+      name: '🖼️ Đoán Ảnh',
+      weight: 20,
+      async execute(channel, onlineMembers) {
+        const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
+        
+        const loadingEmbed = new EmbedBuilder()
+          .setTitle('🖼️ ĐANG TẢI ẢNH...')
+          .setDescription(`${mentions}\n\n⏳ Đợi tí nhé...`)
+          .setColor('#3498DB');
+        
+        const msg = await channel.send({ embeds: [loadingEmbed] });
+        
+        // Lấy ảnh challenge
+        const challenge = await ImageSearchService.getRandomImageChallenge();
+        
+        const embed = new EmbedBuilder()
+          .setTitle('🖼️ ĐOÁN ẢNH NÀY LÀ GÌ?')
+          .setDescription(`${mentions}\n\n**Gợi ý:** ${challenge.hint}\n\n⏰ 45 giây để đoán!`)
+          .setImage(challenge.imageUrl)
+          .setColor('#E74C3C')
+          .setFooter({ text: 'Nhìn kỹ và đoán nhé! 👀' });
+        
+        await msg.edit({ embeds: [embed] });
+        
+        const filter = m => 
+          !m.author.bot && 
+          onlineMembers.includes(m.author.id) &&
+          challenge.answers.some(ans => 
+            m.content.toLowerCase().includes(ans.toLowerCase())
+          );
+        
+        try {
+          const collected = await channel.awaitMessages({ 
+            filter, 
+            max: 1, 
+            time: 45000, 
+            errors: ['time'] 
+          });
+          
+          const winner = collected.first();
+          await channel.send({
+            embeds: [new EmbedBuilder()
+              .setTitle('🎉 ĐÚNG RỒI!')
+              .setDescription(`**${winner.author}** đoán đúng rồi!\n\n✅ Đáp án: **${challenge.answers[0]}**`)
+              .setColor('#00FF00')
+              .setThumbnail(challenge.imageUrl)]
+          });
+          return [winner.author.id];
+        } catch {
+          await channel.send({
+            embeds: [new EmbedBuilder()
+              .setTitle('⏰ HẾT GIỜ!')
+              .setDescription(`Đáp án đúng là: **${challenge.answers[0]}** ${challenge.hint}`)
+              .setColor('#FF0000')]
+          });
+          return [];
+        }
+      }
+    },
+
+    {
+      type: 'music_guess',
+      name: '🎵 Đoán Bài Hát',
+      weight: 20,
+      async execute(channel, onlineMembers) {
+        const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
+        const song = MusicService.getRandomSong();
+        const songUrl = MusicService.getSongUrl(song.youtubeId);
+        
+        const embed = new EmbedBuilder()
+          .setTitle('🎵 ĐOÁN BÀI HÁT!')
+          .setDescription(`${mentions}\n\n🎧 Nghe đoạn nhạc dưới đây và đoán tên bài hát!\n\n[▶️ CLICK ĐỂ NGHE](${songUrl})\n\n⏰ 60 giây để đoán!`)
+          .setColor('#9B59B6')
+          .setFooter({ text: `Ca sĩ: ${song.artist} 🎤` })
+          .setThumbnail('https://i.imgur.com/5KwAqYm.png');
+        
+        await channel.send({ embeds: [embed] });
+        
+        const filter = m => 
+          !m.author.bot && 
+          onlineMembers.includes(m.author.id) &&
+          song.answers.some(ans => 
+            m.content.toLowerCase().includes(ans.toLowerCase())
+          );
+        
+        try {
+          const collected = await channel.awaitMessages({ 
+            filter, 
+            max: 1, 
+            time: 60000, 
+            errors: ['time'] 
+          });
+          
+          const winner = collected.first();
+          await channel.send({
+            embeds: [new EmbedBuilder()
+              .setTitle('🎉 ĐÚNG RỒI!')
+              .setDescription(`**${winner.author}** đoán đúng!\n\n🎵 Bài hát: **${song.name}**\n🎤 Ca sĩ: **${song.artist}**`)
+              .setColor('#00FF00')
+              .setURL(songUrl)]
+          });
+          return [winner.author.id];
+        } catch {
+          await channel.send({
+            embeds: [new EmbedBuilder()
+              .setTitle('⏰ HẾT GIỜ!')
+              .setDescription(`Đáp án: **${song.name}** - ${song.artist}\n\n[🎵 Nghe lại](${songUrl})`)
+              .setColor('#FF0000')]
+          });
+          return [];
+        }
+      }
+    },
+
+    {
+      type: 'ai_word_chain',
+      name: '🔗 Nối Từ vs AI',
+      weight: 15,
+      async execute(channel, onlineMembers) {
+        const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
+        let currentWord = 'game';
+        let usedWords = new Set([currentWord]);
+        let players = new Map();
+        
+        const embed = new EmbedBuilder()
+          .setTitle('🔗 NỐI TỪ vs AI!')
+          .setDescription(`${mentions}\n\n**Từ đầu tiên:** ${currentWord}\n\nNối từ bắt đầu bằng chữ "${currentWord.slice(-1)}"!\n⏰ 2 phút! AI sẽ chơi cùng!`)
+          .setColor('#9B59B6')
+          .setFooter({ text: 'Không được lặp từ đã nói!' });
+        
+        await channel.send({ embeds: [embed] });
+        
+        const filter = m => !m.author.bot && onlineMembers.includes(m.author.id);
+        const collector = channel.createMessageCollector({ filter, time: 120000 });
+        
+        collector.on('collect', async (m) => {
+          const word = m.content.trim().toLowerCase();
+          const lastChar = currentWord.slice(-1);
+          
+          if (!word.startsWith(lastChar)) {
+            return m.react('❌');
+          }
+          
+          if (usedWords.has(word)) {
+            return m.react('🔁');
+          }
+          
+          usedWords.add(word);
+          players.set(m.author.id, (players.get(m.author.id) || 0) + 1);
+          currentWord = word;
+          await m.react('✅');
+          
+          // AI chơi sau 2-3 giây
+          setTimeout(async () => {
+            const aiWord = await AIService.generateWordChainWord(currentWord);
+            if (!usedWords.has(aiWord.toLowerCase())) {
+              usedWords.add(aiWord.toLowerCase());
+              currentWord = aiWord.toLowerCase();
+              await channel.send(`🤖 AI: **${aiWord}**`);
+            }
+          }, 2000 + Math.random() * 1000);
+        });
+        
+        collector.on('end', async () => {
+          const rankings = Array.from(players.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3);
+          
+          const resultEmbed = new EmbedBuilder()
+            .setTitle('🏆 KẾT QUẢ NỐI TỪ!')
+            .setDescription(
+              rankings.length > 0
+                ? rankings.map((([id, count], i) => `${i + 1}. <@${id}>: **${count}** từ`)).join('\n')
+                : 'Không ai chơi!'
+            )
+            .setColor('#FFD700')
+            .setFooter({ text: `Tổng ${usedWords.size} từ đã dùng` });
+          
+          await channel.send({ embeds: [resultEmbed] });
+        });
+        
+        return Array.from(players.keys());
+      }
+    },
+
     {
       type: 'reaction_game',
       name: '⚡ Reaction Speed',
-      weight: 25,
+      weight: 15,
       async execute(channel, onlineMembers) {
         const emojis = ['🍕', '🎮', '🎵', '⚽', '🎨', '🚀', '💎', '🔥'];
         const targetEmoji = emojis[Math.floor(Math.random() * emojis.length)];
@@ -74,7 +267,6 @@ class EventTypes {
           .setColor('#FF6B6B');
         
         const msg = await channel.send({ embeds: [embed] });
-        
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         const startEmbed = new EmbedBuilder()
@@ -116,10 +308,11 @@ class EventTypes {
         }
       }
     },
+
     {
       type: 'poll',
       name: '📊 Poll Nhanh',
-      weight: 20,
+      weight: 10,
       async execute(channel, onlineMembers) {
         const polls = [
           { q: 'Hôm nay làm gì?', opts: ['🎮 Chơi game', '📺 Xem phim', '💤 Ngủ', '📚 Học'] },
@@ -162,54 +355,6 @@ class EventTypes {
           
           await channel.send({ embeds: [resultEmbed] });
         }, 60000);
-        
-        return onlineMembers;
-      }
-    },
-    {
-      type: 'meme_time',
-      name: '😂 Meme Time',
-      weight: 15,
-      async execute(channel, onlineMembers) {
-        const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
-        
-        const embed = new EmbedBuilder()
-          .setTitle('😂 MEME TIME!')
-          .setDescription(`${mentions}\n\n**SPAM MEME TRONG 2 PHÚT!**\n\nMeme được react nhiều nhất thắng! 🏆`)
-          .setColor('#FF6B6B')
-          .setFooter({ text: 'Ready... Set... MEME!' })
-          .setTimestamp();
-        
-        await channel.send({ embeds: [embed] });
-        
-        setTimeout(async () => {
-          await channel.send({
-            embeds: [new EmbedBuilder()
-              .setTitle('⏰ HẾT GIỜ!')
-              .setDescription('Meme time kết thúc! Check reactions để xem ai thắng 😎')
-              .setColor('#FFA500')]
-          });
-        }, 120000);
-        
-        return onlineMembers;
-      }
-    },
-    {
-      type: 'word_chain',
-      name: '🔗 Nối Từ',
-      weight: 10,
-      async execute(channel, onlineMembers) {
-        const startWords = ['game', 'music', 'phone', 'book', 'food'];
-        const startWord = startWords[Math.floor(Math.random() * startWords.length)];
-        const mentions = onlineMembers.map(id => `<@${id}>`).join(' ');
-        
-        const embed = new EmbedBuilder()
-          .setTitle('🔗 GAME NỐI TỪ!')
-          .setDescription(`${mentions}\n\n**Từ đầu tiên:** ${startWord}\n\nNối từ bắt đầu bằng chữ cái cuối của từ trước!\n⏰ 2 phút!`)
-          .setColor('#9B59B6')
-          .setFooter({ text: 'Ví dụ: game → eat → tree → ...' });
-        
-        await channel.send({ embeds: [embed] });
         
         return onlineMembers;
       }

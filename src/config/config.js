@@ -3,6 +3,7 @@ require('dotenv').config();
 module.exports = {
   DISCORD_TOKEN: process.env.DISCORD_TOKEN,
   DATABASE_URL: process.env.DATABASE_URL,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
   REQUIRED_ROLE_NAME: process.env.REQUIRED_ROLE_NAME,
   ADMIN_USER_IDS: (process.env.ADMIN_USER_IDS || '').split(',').filter(Boolean),
   

@@ -1,25 +1,23 @@
 {
   "name": "discord-bot-events",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A collection of event handlers for a Discord bot using discord.js",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },
-  "keywords": [
-    "discord",
-    "bot",
-    "events",
-    "automation"
-  ],
-  "author": "Xoai Ngu",
+  "keywords": ["discord", "bot", "events", "ai", "groq"],
+  "author": "Nguyen Khoi",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.11.0",
     "pg": "8.16.3",
     "dotenv": "^16.3.1",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "groq-sdk": "^0.3.2",
+    "axios": "^1.4.0",
+    "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
