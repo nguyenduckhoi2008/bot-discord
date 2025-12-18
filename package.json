@@ -1,0 +1,30 @@
+{
+  "name": "discord-bot-events",
+  "version": "1.0.0",
+  "description": "A collection of event handlers for a Discord bot using discord.js",
+  "main": "src/index.js",
+  "srcipt": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "events",
+    "automation"
+  ],
+  "author": "Xoai Ngu",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "pg": "8.16.3",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
